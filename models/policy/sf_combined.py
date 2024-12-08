@@ -234,7 +234,7 @@ class SF_Combined(BasePolicy):
                 state_pred, next_states
             )
         else:
-            phi_s_loss = self._phi_loss_s_scaler * self.mse_loss(
+            phi_s_loss = self._phi_loss_s_scaler * self.mqe4D_loss(
                 next_states, state_pred
             )
 

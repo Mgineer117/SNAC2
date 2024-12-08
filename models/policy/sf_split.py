@@ -166,11 +166,7 @@ class SF_Split(BasePolicy):
                 {"params": self._options, "lr": option_lr},
             ]
         )
-
-        if self.psiNet is not None:
-            self.psi_optim = torch.optim.Adam(
-                params=self.psiNet.parameters(), lr=psi_lr
-            )
+        self.psi_optim = torch.optim.Adam(params=self.psiNet.parameters(), lr=psi_lr)
 
         #
         self.dummy = torch.tensor(1e-5)

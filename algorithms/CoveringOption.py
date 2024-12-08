@@ -318,7 +318,8 @@ class CoveringOption:
                 log_interval=self.args.op_log_interval,
                 grid_type=self.args.grid_type,
             )
-            if self.sf_network.psiNet is None:
+
+            if self.args.Psi_epoch > 0:
                 op_trainer.train(z=z)
                 self.curr_epoch += self.args.OP_epoch
             else:

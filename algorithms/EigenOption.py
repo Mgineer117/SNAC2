@@ -136,11 +136,13 @@ class EigenOption:
                 grid_type=self.args.grid_type,
             )
 
-            if self.sf_network.psiNet is None:
-                final_epoch = op_trainer.train()
-            else:
+            if self.args.Psi_epoch > 0:
                 final_epoch = op_trainer.evaluate(epoch=3)
-                print(f"\n+++Psi-Network exists, so no OP training takes place+++")
+                print(
+                    f"\n+++++Psi-Network exists, so no OP training takes place+++++ \n"
+                )
+            else:
+                final_epoch = op_trainer.train()
 
         else:
             self.op_network = call_opNetwork(self.sf_network, self.args)

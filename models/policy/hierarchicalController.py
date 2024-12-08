@@ -119,9 +119,10 @@ class HC_Controller(BasePolicy):
         self.op_network.device = device
         self.to(device)
 
-    def getPhi(self, x, agent_pos):
+    def getPhi(self, state, agent_pos):
+        obs = {"observation": state, "agent_pos": agent_pos}
         with torch.no_grad():
-            phi, _ = self.convNet(x, agent_pos, deterministic=True)
+            phi, _ = self.sf_network.get_features(obs, deterministic=True)
         return phi
 
     def preprocess_obs(self, obs):

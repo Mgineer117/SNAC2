@@ -178,15 +178,12 @@ def call_sfNetwork(args):
                     activation=nn.Tanh(),
                 )
 
-            if args.Psi_epoch > 0:
-                psiNet = PsiCritic(
-                    fc_dim=args.fc_dim,
-                    sf_dim=args.sf_dim,
-                    a_dim=args.a_dim,
-                    activation=nn.Tanh(),
-                )
-            else:
-                psiNet = None
+            psiNet = PsiCritic(
+                fc_dim=args.fc_dim,
+                sf_dim=args.sf_dim,
+                a_dim=args.a_dim,
+                activation=nn.Tanh(),
+            )
 
             options = None
 
@@ -250,15 +247,12 @@ def call_sfNetwork(args):
                     activation=nn.Tanh(),
                 )
 
-            if args.Psi_epoch > 0:
-                psiNet = PsiCritic(
-                    fc_dim=args.fc_dim,
-                    sf_dim=args.sf_dim,
-                    a_dim=args.a_dim,
-                    activation=nn.Tanh(),
-                )
-            else:
-                psiNet = None
+            psiNet = PsiCritic(
+                fc_dim=args.fc_dim,
+                sf_dim=args.sf_dim,
+                a_dim=args.a_dim,
+                activation=nn.Tanh(),
+            )
 
             options = None
 
@@ -316,6 +310,8 @@ def call_opNetwork(
             activation=nn.Tanh(),
         )
 
+    use_psi_action = True if args.Psi_epoch > 0 else False
+
     policy = OP_Controller(
         sf_network=sf_network,
         optionPolicy=optionPolicy,
@@ -323,6 +319,7 @@ def call_opNetwork(
         algo_name=args.algo_name,
         options=options,
         option_vals=option_vals,
+        use_psi_action=use_psi_action,
         a_dim=args.a_dim,
         policy_lr=args.op_policy_lr,
         critic_lr=args.op_critic_lr,

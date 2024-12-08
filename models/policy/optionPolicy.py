@@ -31,6 +31,7 @@ class OP_Controller(BasePolicy):
         algo_name: str,
         options: nn.Module,
         option_vals: torch.Tensor,
+        use_psi_action: bool,
         a_dim: int,
         policy_lr: float = 1e-4,
         critic_lr: float | None = None,
@@ -50,6 +51,7 @@ class OP_Controller(BasePolicy):
         self._options = nn.Parameter(options.to(self._dtype).to(self.device))
         self._option_vals = option_vals.to(self._dtype).to(self.device)
         self._num_options = options.shape[0]
+        self._use_psi_action = use_psi_action
         self._a_dim = a_dim
         self._entropy_scaler = entropy_scaler
         self._eps = eps
@@ -108,7 +110,7 @@ class OP_Controller(BasePolicy):
         self._forward_steps += 1
         obs = self.preprocess_obs(obs)
 
-        if self.sf_network.psiNet is not None:
+        if self._use_psi_action:
             with torch.no_grad():
                 psi, _ = self.sf_network.get_cumulative_features(obs)
             psi_logits = self._intrinsicValue(psi, z)

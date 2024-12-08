@@ -124,14 +124,10 @@ class SF_Combined(BasePolicy):
                 {"params": self._options, "lr": option_lr},
             ]
         )
-
-        if self.psiNet is not None:
-            self.psi_optim = torch.optim.Adam(
-                params=self.psiNet.parameters(), lr=psi_lr
-            )
+        self.psi_optim = torch.optim.Adam(params=self.psiNet.parameters(), lr=psi_lr)
 
         #
-        self.dummy = torch.tensor(0.0)
+        self.dummy = torch.tensor(1e-5)
         self.to(self.device).to(self._dtype)
 
     def to_device(self, device):

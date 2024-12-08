@@ -27,7 +27,7 @@
         "gamma": 0.995
     },
     "CtF1v1": {
-        "SF_epoch": 250,
+        "SF_epoch": 300,
         "Psi_epoch": 100,
         "OP_epoch": 25,
         "HC_epoch": 2000,
@@ -54,7 +54,7 @@
         "gamma": 0.995
     },
     "CtF1v2": {
-        "SF_epoch": 250,
+        "SF_epoch": 300,
         "Psi_epoch": 100,
         "OP_epoch": 25,
         "HC_epoch": 2000,
@@ -62,7 +62,7 @@
         "step_per_epoch": 50,
         "sf_log_interval": 50,
         "op_log_interval": 5,
-        "hc_log_interval": 1,
+        "hc_log_interval": 10,
         "ppo_log_interval": 100,
         "feature_lr": 1e-4,
         "option_lr": 5e-5,
@@ -91,21 +91,21 @@
         "op_log_interval": 10,
         "hc_log_interval": 250,
         "ppo_log_interval": 250,
-        "feature_lr": 5e-4,
-        "option_lr": 1e-4,
+        "feature_lr": 1e-3,
+        "option_lr": 3e-4,
         "phi_loss_r_scaler": 1.0,
         "phi_loss_s_scaler": 0.1,
         "phi_loss_kl_scaler": 10.0,
         "phi_loss_l2_scaler": 1e-4,
-        "episode_len": 500,
+        "episode_len": 250,
         "episode_num": 6,
         "eval_episodes": 6,
-        "num_traj_decomp": 30,
+        "num_traj_decomp": 50,
         "feature_fc_dim": 512,
         "fc_dim": 256,
         "sf_dim": 64,
         "render_fps": 60,
-        "gamma": 0.999
+        "gamma": 0.995
     },
     "InvertedPendulum": {
         "SF_epoch": 500,

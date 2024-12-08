@@ -125,7 +125,10 @@ class SF_Combined(BasePolicy):
             ]
         )
 
-        self.psi_optim = torch.optim.Adam(params=self.psiNet.parameters(), lr=psi_lr)
+        if self.psiNet is not None:
+            self.psi_optim = torch.optim.Adam(
+                params=self.psiNet.parameters(), lr=psi_lr
+            )
 
         #
         self.dummy = torch.tensor(0.0)

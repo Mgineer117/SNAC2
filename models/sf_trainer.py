@@ -161,7 +161,7 @@ class SFTrainer:
             batch, sampleT = self.sampler.collect_samples(
                 self.policy, grid_type=self.grid_type
             )
-            self.buffer.push(batch, sort="reward")
+            self.buffer.push(batch, post_process="nonzero_rewards")
             sample_time += sampleT
             total_sample_time += sampleT
             if count % 100 == 0:

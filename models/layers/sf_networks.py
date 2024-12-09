@@ -247,7 +247,11 @@ class ConvNetwork(nn.Module):
         for i in range(self._agent_num):
             x_pos = agent_pos[:, 2 * i].long()
             y_pos = agent_pos[:, 2 * i + 1].long()
-            value = 1 if i == 0 else 10  # Value for the agent or enemy
+            if x_pos == 0.0 and y_pos == 0.0:
+                # for masking purpose in some cases
+                value = 0.0
+            else:
+                value = 1 if i == 0 else -1  # Value for the agent or enemy
             agent_map[torch.arange(state.shape[0]), x_pos, y_pos] = value
 
         # Reshape the map

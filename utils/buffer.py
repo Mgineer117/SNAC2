@@ -67,7 +67,7 @@ class TrajectoryBuffer:
         self.num_trj = 0
         self.full = False
 
-    def push(self, batch: dict, sort: str | None = None) -> None:
+    def push(self, batch: dict, post_process: str | None = None) -> None:
         """
         Method: Push the batch into the data buffer. This saves it as a trajectory
         --------------------------------------------------------------------------------------------
@@ -82,10 +82,9 @@ class TrajectoryBuffer:
 
         if not self.full:
             trajs = self.decompose(batch)
-            temp_trajs = []
 
-            if sort == "reward":
-                # stack = 0
+            if post_process == "non_zero_rewards":
+                temp_trajs = []
                 for trj in trajs:
                     if np.any(trj["rewards"] != 0):
                         temp_trajs.append(trj)

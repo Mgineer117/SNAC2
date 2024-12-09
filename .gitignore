@@ -141,6 +141,7 @@ wandb/
 __pycache__/
 *.pyc
 *.log
+*.p
 wandb
 
 # log/eval_log/*

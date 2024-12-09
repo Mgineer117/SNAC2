@@ -61,8 +61,9 @@ def discover_options(
     policy: BasePolicy,
     sampler: OnlineSampler,
     plotter: Plotter,
-    grid_type: int = 0,
-    algo_name: str = "SNAC",
+    grid_type: int,
+    env_name: str,
+    algo_name: str,
     num: int = 10,
     gamma: int = 0.99,
     num_trj: int = 100,
@@ -97,10 +98,27 @@ def discover_options(
     option_buffer.wipe()
 
     obs = {"observation": batch["states"], "agent_pos": batch["agent_pos"]}
-    batch["features"], _ = policy.get_features(obs, to_numpy=True)
+    features, _ = policy.get_features(obs, to_numpy=True)
+
+    if env_name in ("CtF1v1", "CtF1v2", "CtF1v3", "CtF1v4"):
+        masked_states = batch["states"].copy()
+        masked_agent_pos = batch["agent_pos"].copy()
+
+        # find dynamical objects(enemy agents)
+        n, x, y = np.where(masked_states[:, :, :, 1] == 2)
+        masked_states[n, x, y, 1] = 0
+        masked_states[n, x, y, 2] = 0
+        # agent_pos masking
+        masked_agent_pos[2:] *= 0
+
+        masked_obs = {"observation": masked_states, "agent_pos": masked_agent_pos}
+        masked_features, _ = policy.get_features(masked_obs, to_numpy=True)
+    else:
+        masked_features = features.copy()
 
     ### Convert to the tensor
-    features = torch.from_numpy(batch["features"]).to(torch.float32)
+    features = torch.from_numpy(features).to(torch.float32)
+    masked_features = torch.from_numpy(masked_features).to(torch.float32)
     terminals = torch.from_numpy(batch["terminals"]).to(torch.float32)
 
     decomp_psi = False
@@ -108,15 +126,21 @@ def discover_options(
         #### Compute Psi from Phi
         with torch.no_grad():
             psi = estimate_psi(features, terminals, gamma)  # operate on cpu
+            masked_psi = estimate_psi(
+                masked_features, terminals, gamma
+            )  # operate on cpu
 
         # to save VRAM
-        del features, terminals
+        del features, masked_features, terminals
     else:
         psi = features.clone()
+        masked_psi = masked_features.clone()
 
     ### Compute the vectors via SVD
     if algo_name in ("SNAC", "SNAC+", "SNAC++"):
-        psi_r, psi_s = policy.split(psi)
+        psi_r, _ = policy.split(psi)
+        _, psi_s = policy.split(masked_psi)
+
         option_dim = psi_r.shape[-1]
 
         if option_dim < 3 * num:
@@ -215,7 +239,7 @@ def discover_options(
                 f"The number of eigenvectors smaller than what you are to sample!!{option_dim}<{3*num}"
             )
 
-        _, evals, evecs = torch.svd(psi)  # S: max - min
+        _, evals, evecs = torch.svd(masked_psi)  # S: max - min
 
         if algo_name == "EigenOption":
             ##### top n vectors #####
@@ -326,6 +350,7 @@ def get_eigenvectors(
             sampler=sampler,
             plotter=plotter,
             grid_type=args.grid_type,
+            env_name=args.env_name,
             algo_name=args.algo_name,
             num=int(args.num_vector / 2),
             num_trj=args.num_traj_decomp,
@@ -340,6 +365,7 @@ def get_eigenvectors(
             sampler=sampler,
             plotter=plotter,
             grid_type=args.grid_type,
+            env_name=args.env_name,
             algo_name=args.algo_name,
             num=args.num_vector,
             num_trj=args.num_traj_decomp,

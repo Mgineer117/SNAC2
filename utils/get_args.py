@@ -158,7 +158,7 @@ def get_args(verbose=True):
     parser.add_argument(
         "--min-option-length",
         type=int,
-        default=2,
+        default=5,
         help="Minimum time step requirement for option",
     )
     parser.add_argument(
@@ -375,7 +375,7 @@ def get_args(verbose=True):
     parser.add_argument(
         "--import-sf-model",
         type=bool,
-        default=False,
+        default=True,
         help="it imports previously trained model",
     )
     parser.add_argument(

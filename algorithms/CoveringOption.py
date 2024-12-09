@@ -118,6 +118,8 @@ class CoveringOption:
                 - Train OptionPolicy for the vectors
         ----------------------------------------------
         """
+        self.sampler.initialize(episode_num=self.args.op_episode_num)
+
         self.option_vals = torch.zeros((self.args.num_vector))
         self.options = torch.zeros((self.args.num_vector, self.args.sf_dim))
 
@@ -192,6 +194,8 @@ class CoveringOption:
         Train Hierarchical Controller to compute optimal policy that alternates between
         options and the random walk.
         """
+        self.sampler.initialize(episode_num=self.args.hc_episode_num)
+
         self.hc_network = call_hcNetwork(
             self.sf_network.feaNet, self.op_network, self.args
         )

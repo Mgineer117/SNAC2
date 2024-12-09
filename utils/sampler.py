@@ -30,10 +30,10 @@ def allocate_values(total, value):
 
 
 def calculate_workers_and_rounds(environments, episodes_per_env, num_cores):
-    if episodes_per_env <= 2:
+    if episodes_per_env <= 5:
         num_worker_per_env = 1
-    elif episodes_per_env > 2:
-        num_worker_per_env = episodes_per_env // 2
+    elif episodes_per_env > 5:
+        num_worker_per_env = episodes_per_env // 5
 
     # Calculate total number of workers
     total_num_workers = num_worker_per_env * len(environments)
@@ -51,29 +51,26 @@ def calculate_workers_and_rounds(environments, episodes_per_env, num_cores):
         num_env_per_round = [len(environments)]
         rounds = 1
 
-    episodes_per_worker = int(episodes_per_env * len(environments) / total_num_workers)
-    return num_worker_per_round, num_env_per_round, episodes_per_worker, rounds
+    episodes_per_worker = math.floor(
+        episodes_per_env * len(environments) / total_num_workers
+    )
+
+    total_episodes = episodes_per_env * len(environments)
+    running_episodes = episodes_per_worker * total_num_workers
+    dropped_episodes = total_episodes - running_episodes
+
+    return (
+        num_worker_per_round,
+        num_env_per_round,
+        episodes_per_worker,
+        dropped_episodes,
+        rounds,
+    )
 
 
 class Base:
     def __init__():
         pass
-
-    def initialize(self, episode_num):
-        # Preprocess for multiprocessing to avoid CPU overscription and deadlock
-        num_workers_per_round, num_env_per_round, episodes_per_worker, rounds = (
-            calculate_workers_and_rounds(
-                self.training_envs, episode_num, self.num_cores
-            )
-        )
-
-        self.num_workers_per_round = num_workers_per_round
-        self.num_env_per_round = num_env_per_round
-        self.total_num_worker = sum(self.num_workers_per_round)
-        self.episodes_per_worker = episodes_per_worker
-        self.thread_batch_size = self.episodes_per_worker * self.episode_len
-        self.num_worker_per_env = int(self.total_num_worker / len(self.training_envs))
-        self.rounds = rounds
 
     def get_reset_data(self, batch_size, init="nan"):
         """
@@ -286,10 +283,14 @@ class OnlineSampler(Base):
         self.num_cores = (
             num_cores if num_cores is not None else multiprocessing.cpu_count()
         )  # torch.get_num_threads() returns appropriate num cpu cores while mp give all available
-        num_workers_per_round, num_env_per_round, episodes_per_worker, rounds = (
-            calculate_workers_and_rounds(
-                self.training_envs, self.episode_num, self.num_cores
-            )
+        (
+            num_workers_per_round,
+            num_env_per_round,
+            episodes_per_worker,
+            dropped_episodes,
+            rounds,
+        ) = calculate_workers_and_rounds(
+            self.training_envs, self.episode_num, self.num_cores
         )
 
         self.num_workers_per_round = num_workers_per_round
@@ -300,6 +301,7 @@ class OnlineSampler(Base):
         self.num_worker_per_env = int(self.total_num_worker / len(self.training_envs))
         self.rounds = rounds
 
+        total_episodes = self.total_num_worker * self.episodes_per_worker
         if verbose:
             print("====================")
             print("Sampling Parameters:")
@@ -310,10 +312,47 @@ class OnlineSampler(Base):
             print(f"# Environments each Round : {self.num_env_per_round}")
             print(f"Total number of Worker    : {self.total_num_worker}")
             print(f"Episodes per Worker       : {self.episodes_per_worker}")
+            print(
+                f"Running Eps / Given Eps   : {total_episodes} / {total_episodes - dropped_episodes}"
+            )
             print(f"Max. batch size           : {self.thread_batch_size}")
 
         # enforce one thread for each worker to avoid CPU overscription.
         torch.set_num_threads(1)
+
+    def initialize(self, episode_num, verbose=True):
+        # Preprocess for multiprocessing to avoid CPU overscription and deadlock
+        (
+            num_workers_per_round,
+            num_env_per_round,
+            episodes_per_worker,
+            dropped_episodes,
+            rounds,
+        ) = calculate_workers_and_rounds(
+            self.training_envs, episode_num, self.num_cores
+        )
+
+        self.num_workers_per_round = num_workers_per_round
+        self.num_env_per_round = num_env_per_round
+        self.total_num_worker = sum(self.num_workers_per_round)
+        self.episodes_per_worker = episodes_per_worker
+        self.thread_batch_size = self.episodes_per_worker * self.episode_len
+        self.num_worker_per_env = int(self.total_num_worker / len(self.training_envs))
+        self.rounds = rounds
+
+        total_episodes = self.total_num_worker * self.episodes_per_worker
+        if verbose:
+            print(f"\n+++++Sampler episode num has changed+++++\n")
+            print(
+                f"Cores (usage)/(given)     : {self.num_workers_per_round[0]}/{self.num_cores} out of {multiprocessing.cpu_count()}"
+            )
+            print(f"# Environments each Round : {self.num_env_per_round}")
+            print(f"Total number of Worker    : {self.total_num_worker}")
+            print(f"Episodes per Worker       : {self.episodes_per_worker}")
+            print(
+                f"Running Eps / Given Eps   : {total_episodes} / {total_episodes - dropped_episodes}"
+            )
+            print(f"Max. batch size           : {self.thread_batch_size}")
 
     def collect_trajectory(
         self,

@@ -170,6 +170,24 @@ def get_args(verbose=True):
     parser.add_argument(
         "--episode-num",
         type=int,
+        default=10,
+        help="number of episodes to collect for one env",
+    )
+    parser.add_argument(
+        "--op-episode-num",
+        type=int,
+        default=None,
+        help="number of episodes to collect for one env",
+    )
+    parser.add_argument(
+        "--hc-episode-num",
+        type=int,
+        default=None,
+        help="number of episodes to collect for one env",
+    )
+    parser.add_argument(
+        "--ppo-episode-num",
+        type=int,
         default=None,
         help="number of episodes to collect for one env",
     )

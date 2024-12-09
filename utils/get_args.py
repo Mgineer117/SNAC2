@@ -326,6 +326,12 @@ def get_args(verbose=True):
         help="entropy scaler from PPO action-distribution",
     )
     parser.add_argument(
+        "--ppo-entropy-scaler",
+        type=float,
+        default=5e-3,
+        help="entropy scaler from PPO action-distribution",
+    )
+    parser.add_argument(
         "--tau",
         type=float,
         default=0.95,

@@ -119,7 +119,7 @@ def call_ppoNetwork(args):
         critic=critic,
         policy_lr=args.ppo_policy_lr,
         critic_lr=args.ppo_critic_lr,
-        entropy_scaler=args.entropy_scaler,
+        entropy_scaler=args.ppo_entropy_scaler,
         eps=args.eps_clip,
         tau=args.tau,
         gamma=args.gamma,

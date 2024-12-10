@@ -133,7 +133,7 @@ class CoveringOption:
         print_model_summary(self.op_network, model_name="OP model")
 
         if not self.args.import_op_model:
-            app_trj_num = int(100 / self.args.num_vector)
+            app_trj_num = int(self.args.num_traj_decomp / self.args.num_vector)
 
             ### get first vector with random walk
             batch = self.collect_batch(
@@ -324,9 +324,9 @@ class CoveringOption:
             )
 
             if self.args.Psi_epoch > 0:
-                op_trainer.train(z=z)
-                self.curr_epoch += self.args.OP_epoch
-            else:
                 eval_epoch = 3
                 op_trainer.evaluate(z=z, epoch=eval_epoch)
                 self.curr_epoch += eval_epoch
+            else:
+                op_trainer.train(z=z)
+                self.curr_epoch += self.args.OP_epoch

@@ -325,8 +325,8 @@ class OPTrainer2:
                 update_time += updateT
 
                 # Logging further info
-                loss_dict[self.prefix + "/sample_time"] = sample_time
-                loss_dict[self.prefix + "/update_time"] = update_time
+                loss_dict[self.prefix + "_sample_time"] = sample_time
+                loss_dict[self.prefix + "_update_time"] = update_time
 
                 self.write_log(loss_dict, iter_idx=int(e * self._step_per_epoch + it))
 
@@ -344,7 +344,7 @@ class OPTrainer2:
 
             summary_dict = {}
             for k, v in eval_dict.items():
-                summary_dict[self.prefix + "/" + k] = v
+                summary_dict[self.prefix + "_" + k] = v
 
             # manual logging
             self.evaluator.write_log(

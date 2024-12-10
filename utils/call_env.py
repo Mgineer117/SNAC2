@@ -3,6 +3,7 @@ import gymnasium as gym
 
 from safety_gymnasium import __register_helper
 from gym_multigrid.envs.fourrooms import FourRooms
+from gym_multigrid.envs.maze import Maze
 from gym_multigrid.envs.lavarooms import LavaRooms
 from gym_multigrid.envs.ctf import CtF
 
@@ -26,6 +27,19 @@ def call_env(args):
     if args.env_name == "FourRooms":
         # first call dummy env to find possible location for agent
         env = FourRooms(
+            grid_type=args.grid_type,
+            max_steps=args.episode_len,
+            tile_size=args.img_tile_size,
+            highlight_visible_cells=False,
+            partial_observability=False,
+            render_mode="rgb_array",
+        )
+        disc_or_cont(env, args)
+        args.agent_num = len(env.agents)
+        return GridWrapper(env, tile_size=args.tile_size)
+    elif args.env_name == "Maze":
+        # first call dummy env to find possible location for agent
+        env = Maze(
             grid_type=args.grid_type,
             max_steps=args.episode_len,
             tile_size=args.img_tile_size,

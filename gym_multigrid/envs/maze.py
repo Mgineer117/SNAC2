@@ -1,377 +1,274 @@
-from typing import Final, Literal, TypedDict, TypeAlias
+from itertools import chain
+from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Any, Iterable, SupportsFloat, TypeVar
 
 from gymnasium import spaces
+from gymnasium.core import ActType, ObsType
 import numpy as np
+import random
 from numpy.typing import NDArray
 
-from gym_multigrid.core.agent import Agent, AgentT, MazeActions
+from gym_multigrid.core.constants import *
+from gym_multigrid.utils.window import Window
+from gym_multigrid.core.agent import Agent, PolicyAgent, AgentT, MazeActions
 from gym_multigrid.core.grid import Grid
-from gym_multigrid.core.object import Floor, Flag, Obstacle, WorldObjT
-from gym_multigrid.core.world import MazeWorld, World
+from gym_multigrid.core.object import Goal, Wall
+from gym_multigrid.core.world import RoomWorld
 from gym_multigrid.multigrid import MultiGridEnv
 from gym_multigrid.typing import Position
-from gym_multigrid.utils.map import distance_area_point, load_text_map
 
 
-class ObservationDict(TypedDict):
-    agent: NDArray
-    background: NDArray
-    flag: NDArray
-    obstacle: NDArray
-
-
-Observation: TypeAlias = ObservationDict | NDArray
-
-
-class MazeSingleAgentEnv(MultiGridEnv):
+class Maze(MultiGridEnv):
     """
-    Environment with a single agent and multiple flags
+    Environment for capture the flag with multiple agents with N blue agents and M red agents.
     """
 
     def __init__(
         self,
-        map_path: str,
-        max_steps: int = 100,
-        flag_reward: float = 1.0,
-        obstacle_penalty_ratio: float = 0.0,
-        step_penalty_ratio: float = 0.01,
-        observation_option: Literal["positional", "map"] = "map",
-        render_mode: Literal["human", "rgb_array"] = "rgb_array",
+        grid_type: int = 0,
+        width=31,
+        height=28,
+        max_steps=1000,
+        see_through_walls=False,
+        agent_view_size=7,
+        partial_observability=False,
+        render_mode=None,
+        highlight_visible_cells=True,
+        tile_size=32,
     ):
-        """
-        Initialize a new single agent maze environment
+        self.grid_type = grid_type
 
-        Parameters
-        ----------
-        map_path : str
-            Path to the map file.
-        max_steps : int = 100
-            Maximum number of steps that the agent can take.
-        flag_reward : float = 1.0
-            Reward given to the agent for reaching a flag.
-        obstacle_penalty_ratio : float = 0.0
-            Penalty given to the agent for hitting an obstacle.
-        step_penalty_ratio : float = 0.01
-            Penalty given to the agent for each step taken.
-        observation_option : Literal["positional", "map"] = "map"
-            Observation option. If "positional", the observation is the flattened positions of the objects. If "map", the observation is the same with the map.
-        render_mode : Literal["human", "rgb_array"] = "rgb_array"
-            Render mode.
-        """
-        agent_view_size: Final[int] = 100
-
-        self.world: Final[World] = MazeWorld
+        self.width = width
+        self.height = height
+        self.max_steps = max_steps
+        self.world = RoomWorld
         self.actions_set = MazeActions
 
-        self._map_path: Final[str] = map_path
-        self._field_map: Final[NDArray] = load_text_map(map_path)
+        see_through_walls: bool = False
 
-        height: int
-        width: int
-        height, width = self._field_map.shape
+        self.agents = [
+            Agent(
+                self.world,
+                color="blue",
+                bg_color="light_blue",
+                view_size=agent_view_size,
+                actions=self.actions_set,
+                type="agent",
+            )
+        ]
 
-        self.background: Final[list[Position]] = list(
-            zip(*np.where(self._field_map == self.world.OBJECT_TO_IDX["background"]))
-        )
-        self.obstacle: Final[list[Position]] = list(
-            zip(*np.where(self._field_map == self.world.OBJECT_TO_IDX["obstacle"]))
-        )
-        self.flag: Final[list[Position]] = list(
-            zip(*np.where(self._field_map == self.world.OBJECT_TO_IDX["flag"]))
-        )
+        # Define positions for goals and agents
+        self.goal_positions = [(23, 25)]
+        self.agent_positions = [(15, 10)]
 
-        self.observation_option: Final[Literal["positional", "map"]] = (
-            observation_option
-        )
-
-        self._flag_reward: Final[float] = flag_reward
-        self._obstacle_penalty_ratio: Final[float] = obstacle_penalty_ratio
-        self._step_penalty_ratio: Final[float] = step_penalty_ratio
-
-        blue_agent = Agent(
-            self.world,
-            index=0,
-            color="blue",
-            bg_color="white",
-            view_size=agent_view_size,
-            actions=self.actions_set,
-            type="agent",
-        )
-
-        agents: list[AgentT] = [blue_agent]
+        self.grids = {}
+        self.grid_imgs = {}
 
         super().__init__(
-            width=width,
-            height=height,
+            width=self.width,
+            height=self.height,
             max_steps=max_steps,
-            see_through_walls=True,
-            agents=agents,
-            partial_obs=False,
+            see_through_walls=see_through_walls,
+            agents=self.agents,
             agent_view_size=agent_view_size,
             actions_set=self.actions_set,
+            partial_obs=partial_observability,
             world=self.world,
             render_mode=render_mode,
+            highlight_visible_cells=highlight_visible_cells,
+            tile_size=tile_size,
         )
-
-    def _set_observation_space(self) -> spaces.Dict | spaces.Box:
-        match self.observation_option:
-            case "positional":
-                observation_space = spaces.Dict(
-                    {
-                        "agent": spaces.Box(
-                            low=np.array([-1, -1]),
-                            high=np.array(self._field_map.shape) - 1,
-                            dtype=np.int64,
-                        ),
-                        "background": spaces.Box(
-                            low=np.array(
-                                [[0, 0] for _ in range(len(self.background))]
-                            ).flatten(),
-                            high=np.array(
-                                [
-                                    self._field_map.shape
-                                    for _ in range(len(self.background))
-                                ]
-                            ).flatten()
-                            - 1,
-                            dtype=np.int64,
-                        ),
-                        "flag": spaces.Box(
-                            low=np.array(
-                                [[0, 0] for _ in range(len(self.flag))]
-                            ).flatten(),
-                            high=np.array(
-                                [self._field_map.shape for _ in range(len(self.flag))]
-                            ).flatten()
-                            - 1,
-                            dtype=np.int64,
-                        ),
-                        "obstacle": spaces.Box(
-                            low=np.array(
-                                [[0, 0] for _ in range(len(self.obstacle))]
-                            ).flatten(),
-                            high=np.array(
-                                [
-                                    self._field_map.shape
-                                    for _ in range(len(self.obstacle))
-                                ]
-                            ).flatten()
-                            - 1,
-                            dtype=np.int64,
-                        ),
-                    }
-                )
-
-            case "map":
-                observation_space = spaces.Box(
-                    low=0,
-                    high=len(self.world.OBJECT_TO_IDX) - 1,
-                    shape=self._field_map.shape,
-                    dtype=np.int64,
-                )
-
-            case _:
-                raise ValueError(
-                    f"Invalid observation option: {self.observation_option}"
-                )
-
-        return observation_space
 
     def _gen_grid(self, width, height):
+        # Create the grid
         self.grid = Grid(width, height, self.world)
 
-        for i, j in self.background:
-            self.put_obj(Floor(self.world, color="white", type="background"), i, j)
+        # Explicit maze structure based on the image
+        maze_structure = [
+            "###############################",
+            "#                    #     #  #",
+            "#                    #     #  #",
+            "#                    #     #  #",
+            "#                    #     #  #",
+            "#######   #####  ### #  #  #  #",
+            "#     #            #    #  #  #",
+            "#     #            #    #  #  #",
+            "#     #   #        #    #  #  #",
+            "#     #   #        #    #  #  #",
+            "#  #  #   #        #    #     #",
+            "#  #  #   #        #    #     #",
+            "#  #  #   #        #    #     #",
+            "#  #  #   #        #    #     #",
+            "#  #  #   ##########  # ####  #",
+            "#  #  #       #    #  #    #  #",
+            "#  #  #       #    #  #    #  #",
+            "#  #  #       #    #  #    #  #",
+            "#  #  #       #  # #  #    #  #",
+            "#  #  #       #  # #  #    #  #",
+            "#  #  #       #  # #  #    #  #",
+            "#  #          #  # #  ####    #",
+            "#  #          #  #       #    #",
+            "#  #          #  #       #    #",
+            "#  ############  #       #    #",
+            "#                #       #    #",
+            "#                #       #    #",
+            "###############################",
+        ]
 
-        for i, j in self.obstacle:
-            self.put_obj(
-                Obstacle(
-                    self.world, penalty=self._obstacle_penalty_ratio * self._flag_reward
-                ),
-                i,
-                j,
-            )
+        # Translate the maze structure into the grid
+        for y, row in enumerate(maze_structure):
+            for x, cell in enumerate(row):
+                if cell == "#":
+                    self.grid.set(x, y, Wall(self.world))
+                elif cell == " ":
+                    self.grid.set(x, y, None)
 
-        for flag_idx, (i, j) in enumerate(self.flag):
-            self.put_obj(
-                Flag(self.world, index=flag_idx, color="red", bg_color="white"), i, j
-            )
+        # Place the goal
+        goal = Goal(self.world, 0)
+        self.put_obj(goal, *self.goal_positions[self.grid_type])
+        goal.init_pos, goal.cur_pos = self.goal_positions[self.grid_type]
 
-        self.init_grid: Grid = self.grid.copy()
+        # Place the agent
+        for agent in self.agents:
+            self.place_agent(agent, pos=self.agent_positions[self.grid_type])
 
-        self.place_agent(
-            self.agents[0],
-            pos=self.background[np.random.randint(0, len(self.background))],
-        )
+    def reset(
+        self,
+        *,
+        seed: int | None = None,
+        options: dict | None = None,
+    ):
+        obs, info = super().reset(seed=seed, options=options)
 
-    def reset(self, seed=None) -> tuple[Observation, dict[str, float]]:
-        super().reset(seed=seed)
+        ### NOTE: not multiagent setting
+        self.agent_pos = self.agents[0].pos
 
-        agent: Agent = self.agents[0]
+        ### NOTE: NOT MULTIAGENT SETTING
+        observations = {"image": obs[0][:, :, 0:1]}
+        return observations, info
 
-        assert agent.pos is not None
-        self.agent_traj: list[Position] = [agent.pos]
-        self.rewards: list[float] = []
-
-        obs: Observation = self._get_obs()
-        info: dict[str, float] = self._get_info()
-
-        return obs, info
-
-    def _get_obs(self) -> Observation:
-        for a in self.agents:
-            assert a.pos is not None
-
-        observation: Observation
-
-        match self.observation_option:
-            case "positional":
-                observation = {
-                    "agent": np.array(self.agents[0].pos),
-                    "background": np.array(self.background).flatten(),
-                    "flag": np.array(self.flag).flatten(),
-                    "obstacle": np.array(self.obstacle).flatten(),
-                }
-            case "map":
-                observation = self._encode_map()
-
-            case _:
-                raise ValueError(
-                    f"Invalid observation option: {self.observation_option}"
-                )
-
-        return observation
-
-    def _encode_map(self) -> NDArray:
-        encoded_map: NDArray = np.zeros((self.width, self.height))
-
-        for i, j in self.background:
-            encoded_map[i, j] = self.world.OBJECT_TO_IDX["background"]
-        for i, j in self.obstacle:
-            encoded_map[i, j] = self.world.OBJECT_TO_IDX["obstacle"]
-        for i, j in self.flag:
-            encoded_map[i, j] = self.world.OBJECT_TO_IDX["flag"]
-
-        assert self.agents[0].pos is not None
-        encoded_map[self.agents[0].pos[0], self.agents[0].pos[1]] = (
-            self.world.OBJECT_TO_IDX["agent"]
-        )
-
-        return encoded_map
-
-    def _get_info(self) -> dict[str, float]:
-        assert self.agents[0].pos is not None
-
-        info = {
-            "d_a_f": distance_area_point(self.agents[0].pos, self.flag),
-            "d_a_ob": distance_area_point(self.agents[0].pos, self.obstacle),
-        }
-        return info
-
-    def _move_agent(self, action: int, agent: AgentT) -> None:
-        next_pos: Position
-
-        assert agent.pos is not None
-
-        match action:
-            case self.actions_set.stay:
-                next_pos = agent.pos
-            case self.actions_set.left:
-                next_pos = agent.pos + np.array([0, -1])
-            case self.actions_set.down:
-                next_pos = agent.pos + np.array([-1, 0])
-            case self.actions_set.right:
-                next_pos = agent.pos + np.array([0, 1])
-            case self.actions_set.up:
-                next_pos = agent.pos + np.array([1, 0])
-            case _:
-                raise ValueError(f"Invalid action: {action}")
-
-        if (
-            next_pos[0] < 0
-            or next_pos[1] < 0
-            or next_pos[0] >= self.height
-            or next_pos[1] >= self.width
-        ):
-            pass  # Do nothing
-        else:
-            next_cell: WorldObjT | None = self.grid.get(*next_pos)
-
-            bg_color: str = "white"
-
-            if next_cell is None:
-                agent.move(next_pos, self.grid, self.init_grid, bg_color=bg_color)
-            elif next_cell.can_overlap():
-                agent.move(next_pos, self.grid, self.init_grid, bg_color=bg_color)
-            else:
-                pass
-
-    def _move_agents(self, actions: list[int]) -> None:
-        # Move agent
-        self._move_agent(actions[0], self.agents[0])
-
-    def _is_agent_on_obj(self, agent_loc: Position | None, obj: list[Position]) -> bool:
-        if agent_loc is None:
-            assert self.agents[0].pos is not None
-            agent_loc = self.agents[0].pos
-        else:
-            pass
-
-        on_obj: bool = False
-
-        for obj_loc in obj:
-            if agent_loc[0] == obj_loc[0] and agent_loc[1] == obj_loc[1]:
-                on_obj = True
-                break
-            else:
-                pass
-
-        return on_obj
-
-    def step(
-        self, action: int
-    ) -> tuple[Observation, float, bool, bool, dict[str, float]]:
+    def step(self, actions):
         self.step_count += 1
 
-        actions: list[int] = [action]
+        ### NOTE: MULTIAGENT SETTING NOT IMPLEMENTED
+        actions = [actions]
+        order = np.random.permutation(len(actions))
 
-        self._move_agents(actions)
+        rewards = np.zeros(len(actions))
 
-        assert self.agents[0].pos is not None
+        for i in order:
+            if (
+                self.agents[i].terminated
+                or self.agents[i].paused
+                or not self.agents[i].started
+            ):
+                continue
 
-        agent_loc: Position = self.agents[0].pos
+            # Get the current agent position
+            curr_pos = self.agents[i].pos
+            done = False
 
-        terminated: bool = False
-        truncated: bool = self.step_count >= self.max_steps
+            # Rotate left
+            if actions[i] == self.actions.left:
+                # Get the contents of the cell in front of the agent
+                fwd_pos = tuple(a + b for a, b in zip(curr_pos, (0, -1)))
+                fwd_cell = self.grid.get(*fwd_pos)
 
-        flag_reward: float = self._flag_reward
-        obstacle_penalty: float = flag_reward * self._obstacle_penalty_ratio
-        step_penalty: float = flag_reward * self._step_penalty_ratio
-        reward: float = 0.0
+                if fwd_cell is not None:
+                    if fwd_cell.type == "goal":
+                        done = True
+                        rewards = self._reward(i, rewards, 1)
+                    elif fwd_cell.type == "switch":
+                        self._handle_switch(i, rewards, fwd_pos, fwd_cell)
+                    elif fwd_cell.type == "ball":
+                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                elif fwd_cell is None or fwd_cell.can_overlap():
+                    self.grid.set(*self.agents[i].pos, None)
+                    self.grid.set(*fwd_pos, self.agents[i])
+                    self.agents[i].pos = fwd_pos
+                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
 
-        if self._is_agent_on_obj(agent_loc, self.flag):
-            reward += flag_reward
-            terminated = True
-        else:
-            pass
+            # Rotate right
+            elif actions[i] == self.actions.right:
+                # Get the contents of the cell in front of the agent
+                fwd_pos = tuple(a + b for a, b in zip(curr_pos, (0, +1)))
+                fwd_cell = self.grid.get(*fwd_pos)
+                if fwd_cell is not None:
+                    if fwd_cell.type == "goal":
+                        done = True
+                        rewards = self._reward(i, rewards, 1)
+                    elif fwd_cell.type == "switch":
+                        self._handle_switch(i, rewards, fwd_pos, fwd_cell)
+                    elif fwd_cell.type == "ball":
+                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                elif fwd_cell is None or fwd_cell.can_overlap():
+                    self.grid.set(*self.agents[i].pos, None)
+                    self.grid.set(*fwd_pos, self.agents[i])
+                    self.agents[i].pos = fwd_pos
+                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
 
-        if obstacle_penalty != 0:
-            if self._is_agent_on_obj(agent_loc, self.obstacle):
-                reward -= obstacle_penalty
-                terminated = True
+            # Move forward
+            elif actions[i] == self.actions.up:
+                # Get the contents of the cell in front of the agent
+                fwd_pos = tuple(a + b for a, b in zip(curr_pos, (-1, 0)))
+                fwd_cell = self.grid.get(*fwd_pos)
+                if fwd_cell is not None:
+                    if fwd_cell.type == "goal":
+                        done = True
+                        rewards = self._reward(i, rewards, 1)
+                    elif fwd_cell.type == "switch":
+                        self._handle_switch(i, rewards, fwd_pos, fwd_cell)
+                    elif fwd_cell.type == "ball":
+                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                elif fwd_cell is None or fwd_cell.can_overlap():
+                    self.grid.set(*self.agents[i].pos, None)
+                    self.grid.set(*fwd_pos, self.agents[i])
+                    self.agents[i].pos = fwd_pos
+                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
 
+            elif actions[i] == self.actions.down:
+                # Get the contents of the cell in front of the agent
+                fwd_pos = tuple(a + b for a, b in zip(curr_pos, (+1, 0)))
+                fwd_cell = self.grid.get(*fwd_pos)
+                if fwd_cell is not None:
+                    if fwd_cell.type == "goal":
+                        done = True
+                        rewards = self._reward(i, rewards, 1)
+                    elif fwd_cell.type == "switch":
+                        self._handle_switch(i, rewards, fwd_pos, fwd_cell)
+                    elif fwd_cell.type == "ball":
+                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                elif fwd_cell is None or fwd_cell.can_overlap():
+                    self.grid.set(*self.agents[i].pos, None)
+                    self.grid.set(*fwd_pos, self.agents[i])
+                    self.agents[i].pos = fwd_pos
+                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
+            elif actions[i] == self.actions.stay:
+                # Get the contents of the cell in front of the agent
+                fwd_pos = curr_pos
+                fwd_cell = self.grid.get(*fwd_pos)
+                self.agents[i].pos = fwd_pos
+                self._handle_special_moves(i, rewards, fwd_pos, fwd_cell)
             else:
-                pass
+                assert False, "unknown action"
 
+        ### NOTE: not multiagent setting
+        self.agent_pos = self.agents[0].pos
+
+        terminated = done
+        truncated = True if self.step_count >= self.max_steps else False
+
+        if self.partial_obs:
+            obs = self.gen_obs()
         else:
-            pass
+            obs = [
+                self.grid.encode_for_agents(agent_pos=self.agents[i].pos)
+                for i in range(len(actions))
+            ]
 
-        reward -= step_penalty
+        obs = [self.world.normalize_obs * ob for ob in obs]
 
-        self.agent_traj.append(agent_loc)
-        self.rewards.append(reward)
+        ### NOTE: not multiagent
+        observations = {"image": obs[0][:, :, 0:1]}
 
-        observation: Observation = self._get_obs()
-        info: dict[str, float] = self._get_info()
-
-        return observation, reward, terminated, truncated, info
+        return observations, rewards, terminated, truncated, {}

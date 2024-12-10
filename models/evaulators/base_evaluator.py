@@ -97,22 +97,34 @@ class Evaluator:
             policy.to_device(torch.device("cpu"))
             all_devices = check_all_devices(policy)
 
-        (
-            rew_mean_sum,
-            rew_std_sum,
-            ln_mean_sum,
-            ln_std_sum,
-            winRate_mean_sum,
-            winRate_std_sum,
-        ) = (0, 0, 0, 0, 0, 0)
+        dict_list = []
 
         if self.renderPlot:
             """
             Using Multiprocessing crashes graphic rendering process, so we iterate all envs one by one
             """
             for i, env in enumerate(self.envs):
-                rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std = (
-                    self.eval_loop(
+                eval_dict = self.eval_loop(
+                    env,
+                    policy,
+                    epoch,
+                    idx=idx,
+                    name1=name1,
+                    name2=name2,
+                    name3=name3,
+                    queue=None,
+                    grid_type=grid_type,
+                    seed=i,
+                )
+                dict_list.append(eval_dict)
+        else:
+            queue = multiprocessing.Manager().Queue()
+            processes = []
+
+            for i, env in enumerate(self.envs):
+                if i == len(self.envs) - 1:
+                    """Main thread process"""
+                    eval_dict = self.eval_loop(
                         env,
                         policy,
                         epoch,
@@ -124,40 +136,7 @@ class Evaluator:
                         grid_type=grid_type,
                         seed=i,
                     )
-                )
-                rew_mean_sum += rew_mean
-                rew_std_sum += rew_std
-                ln_mean_sum += ln_mean
-                ln_std_sum += ln_std
-                winRate_mean_sum += winRate_mean
-                winRate_std_sum += winRate_std
-        else:
-            queue = multiprocessing.Manager().Queue()
-            processes = []
-
-            for i, env in enumerate(self.envs):
-                if i == len(self.envs) - 1:
-                    """Main thread process"""
-                    rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std = (
-                        self.eval_loop(
-                            env,
-                            policy,
-                            epoch,
-                            idx=idx,
-                            name1=name1,
-                            name2=name2,
-                            name3=name3,
-                            queue=None,
-                            grid_type=grid_type,
-                            seed=i,
-                        )
-                    )
-                    rew_mean_sum += rew_mean
-                    rew_std_sum += rew_std
-                    ln_mean_sum += ln_mean
-                    ln_std_sum += ln_std
-                    winRate_mean_sum += winRate_mean
-                    winRate_std_sum += winRate_std
+                    dict_list.append(eval_dict)
                 else:
                     """Sub-thread process"""
                     p = multiprocessing.Process(
@@ -182,35 +161,18 @@ class Evaluator:
                 p.join()
 
             for _ in range(i):
-                rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std = (
-                    queue.get()
-                )
-                rew_mean_sum += rew_mean
-                rew_std_sum += rew_std
-                ln_mean_sum += ln_mean
-                ln_std_sum += ln_std
-                winRate_mean_sum += winRate_mean
-                winRate_std_sum += winRate_std
+                eval_dict = queue.get()
+                dict_list.append(eval_dict)
 
-        avg_rew_mean = rew_mean_sum / len(self.envs)
-        avg_rew_std = rew_std_sum / len(self.envs)
-        avg_ln_mean = ln_mean_sum / len(self.envs)
-        avg_ln_std = ln_std_sum / len(self.envs)
-        avg_winRate_mean = winRate_mean_sum / len(self.envs)
-        avg_winRate_std = winRate_std_sum / len(self.envs)
+        eval_dict = self.average_dict_values(dict_list)
 
-        eval_dict = {
-            dir_name + "/num_env_steps": env_step,
-            dir_name + "/eval_rew_mean": avg_rew_mean,
-            dir_name + "/eval_rew_std": avg_rew_std,
-            dir_name + "/eval_ln_mean": avg_ln_mean,
-            dir_name + "/eval_ln_std": avg_ln_std,
-            dir_name + "/eval_winRate_mean": avg_winRate_mean,
-            dir_name + "/eval_winRate_std": avg_winRate_std,
-        }
+        summary_dict = {}
+        summary_dict[dir_name + "/" + "num_env_steps"] = env_step
+        for k, v in eval_dict.items():
+            summary_dict[dir_name + "/" + k] = v
 
         if write_log:
-            self.write_log(eval_dict, iter_idx)
+            self.write_log(summary_dict, iter_idx)
 
         if isinstance(policy, List):
             for p in policy:
@@ -218,7 +180,7 @@ class Evaluator:
         else:
             policy.to_device(policy_device)
 
-        return avg_rew_mean, avg_rew_std, avg_ln_mean, avg_ln_std
+        return eval_dict
 
     def write_log(self, logging_dict: dict, iter_idx: int):
         # Logging to WandB and Tensorboard
@@ -240,3 +202,20 @@ class Evaluator:
         torch.manual_seed(temp_seed)
         np.random.seed(temp_seed)
         random.seed(temp_seed)
+
+    def average_dict_values(self, dict_list):
+        if not dict_list:
+            return {}
+
+        # Initialize a dictionary to hold the sum of values for each key
+        sum_dict = {key: 0 for key in dict_list[0].keys()}
+
+        # Iterate over each dictionary in the list
+        for d in dict_list:
+            for key, value in d.items():
+                sum_dict[key] += value
+
+        # Calculate the average for each key
+        avg_dict = {key: sum_val / len(dict_list) for key, sum_val in sum_dict.items()}
+
+        return avg_dict

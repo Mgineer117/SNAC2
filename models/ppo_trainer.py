@@ -91,7 +91,7 @@ class PPOTrainer:
 
             ### Eval Loop
             self.policy.eval()
-            rew_mean, rew_std, _, _ = self.evaluator(
+            eval_dict = self.evaluator(
                 self.policy,
                 env_step=self.num_env_steps,
                 epoch=e + 1,
@@ -100,8 +100,8 @@ class PPOTrainer:
                 grid_type=self.grid_type,
             )
 
-            self.last_reward_mean.append(rew_mean)
-            self.last_reward_std.append(rew_std)
+            self.last_reward_mean.append(eval_dict["rew_mean"])
+            self.last_reward_std.append(eval_dict["rew_std"])
 
             self.save_model(e + 1)
 

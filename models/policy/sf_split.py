@@ -155,6 +155,7 @@ class SF_Split(BasePolicy):
                     device=self.device,
                 ),
             ).to(self.device)
+
             # Normalize to have L2 norm = 1
             self._options.data = self._options.data / self._options.data.norm(
                 p=2, dim=1, keepdim=True

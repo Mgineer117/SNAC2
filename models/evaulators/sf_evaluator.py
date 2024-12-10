@@ -31,7 +31,7 @@ class SF_Evaluator(Evaluator):
         gridPlot: bool = False,
         featurePlot: bool = False,
         renderPlot: bool = False,
-        render_fps:int = 10,
+        render_fps: int = 10,
         eval_ep_num: int = 1,
         log_interval: int = 1,
     ):
@@ -136,7 +136,7 @@ class SF_Evaluator(Evaluator):
         if queue is not None:
             self.set_any_seed(grid_type, seed)
 
-        red_flag_captured = np.zeros((self.eval_ep_num, ))
+        red_flag_captured = np.zeros((self.eval_ep_num,))
         for num_episodes in range(self.eval_ep_num):
             self.update_render_criteria(epoch, num_episodes)
 
@@ -224,7 +224,9 @@ class SF_Evaluator(Evaluator):
                 agent_pos = next_agent_pos
 
                 if "red_flag_captured" in infos:
-                    red_flag_captured[num_episodes] = np.maximum(red_flag_captured[num_episodes], infos["red_flag_captured"])
+                    red_flag_captured[num_episodes] = np.maximum(
+                        red_flag_captured[num_episodes], infos["red_flag_captured"]
+                    )
                 ep_reward += rew
                 ep_length += 1
 
@@ -269,7 +271,7 @@ class SF_Evaluator(Evaluator):
                             epoch=epoch,
                             width=width,
                             height=height,
-                            fps=self.render_fps
+                            fps=self.render_fps,
                         )
                         self.feature_frames = []
 
@@ -280,12 +282,23 @@ class SF_Evaluator(Evaluator):
 
         rew_mean, rew_std = np.mean(reward_list), np.std(reward_list)
         ln_mean, ln_std = np.mean(length_list), np.std(length_list)
-        winRate_mean, winRate_std = np.mean(red_flag_captured), np.std(red_flag_captured)
+        winRate_mean, winRate_std = np.mean(red_flag_captured), np.std(
+            red_flag_captured
+        )
+
+        eval_dict = {
+            "rew_mean": rew_mean,
+            "rew_std": rew_std,
+            "ln_mean": ln_mean,
+            "ln_std": ln_std,
+            "winRate_mean": winRate_mean,
+            "winRate_std": winRate_std,
+        }
 
         if queue is not None:
-            queue.put([rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std])
+            queue.put([eval_dict])
         else:
-            return rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std
+            return eval_dict
 
     def update_render_criteria(self, epoch, num_episodes):
         basisCriteria = epoch % self.log_interval == 0 and num_episodes == 0

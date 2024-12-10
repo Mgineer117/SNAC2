@@ -120,7 +120,7 @@ class OPTrainer:
             ln_mean = np.zeros((self.policy._num_options,))
             ln_std = np.zeros((self.policy._num_options,))
             for z in trange(self.policy._num_options, desc=f"Evaluation", leave=False):
-                avg_rew_mean, avg_rew_std, avg_ln_mean, avg_ln_std = self.evaluator(
+                eval_dict = self.evaluator(
                     self.policy,
                     epoch=e + 1,
                     iter_idx=int(e * self._step_per_epoch + self._step_per_epoch),
@@ -130,10 +130,10 @@ class OPTrainer:
                     write_log=False,  # since OP needs to write log of average of all options
                     grid_type=self.grid_type,
                 )
-                rew_mean[z] = avg_rew_mean
-                rew_std[z] = avg_rew_std
-                ln_mean[z] = avg_ln_mean
-                ln_std[z] = avg_ln_std
+                rew_mean[z] = eval_dict["rew_mean"]
+                rew_std[z] = eval_dict["rew_std"]
+                ln_mean[z] = eval_dict["ln_mean"]
+                ln_std[z] = eval_dict["ln_std"]
 
             rew_mean = np.mean(rew_mean)
             rew_std = np.mean(rew_std)

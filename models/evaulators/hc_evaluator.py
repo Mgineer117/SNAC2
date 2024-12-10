@@ -4,15 +4,40 @@ import random
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from scipy.stats import entropy
 
 from utils.plotter import Plotter
 from log.wandb_logger import WandbLogger
 from models.evaulators.base_evaluator import Evaluator
-import torch.multiprocessing as multiprocessing
 from torch.utils.tensorboard import SummaryWriter
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+
+
+def compute_categorical_entropy(indices, num_categories):
+    """
+    Computes the categorical distribution and its entropy for a given list of indices.
+
+    Args:
+        indices (list or np.ndarray): List of category indices (0 to num_categories-1).
+        num_categories (int): Total number of categories (default is 8).
+
+    Returns:
+        tuple: A tuple (distribution, entropy_value), where
+            - distribution (np.ndarray): The normalized distribution over categories.
+            - entropy_value (float): The entropy of the distribution.
+    """
+    # Flatten the list of arrays into a single array
+    indices_flat = np.concatenate(indices)
+
+    # Count occurrences of each category
+    counts = np.bincount(indices_flat, minlength=num_categories)
+
+    # Normalize to get the categorical distribution
+    distribution = counts / counts.sum()
+
+    # Compute the entropy
+    entropy_value = entropy(distribution, base=2)  # Use base-2 for bits
+
+    return distribution, entropy_value
 
 
 class HC_Evaluator(Evaluator):
@@ -74,7 +99,7 @@ class HC_Evaluator(Evaluator):
         grid_type: int = 0,
         seed: int = None,
         queue=None,
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         ep_buffer = []
         if queue is not None:
             self.set_any_seed(grid_type, seed)
@@ -149,14 +174,15 @@ class HC_Evaluator(Evaluator):
                     red_flag_captured[num_episodes] = np.maximum(
                         red_flag_captured[num_episodes], infos["red_flag_captured"]
                     )
+
                 ep_reward += rew
                 ep_length += step_count
+                option_indices.append(metaData["z_argmax"].numpy())
 
                 # Update the render
                 if self.renderCriteria:
                     img = env.render()
                     self.recorded_frames.append(img)
-                    option_indices.append(metaData["z_argmax"].numpy())
 
                 if done:
                     if self.gridCriteria:
@@ -189,21 +215,45 @@ class HC_Evaluator(Evaluator):
                         self.plotter.plotOptionIndices(
                             option_indices, dir=self.plotter.hc_path, epoch=epoch
                         )
-                    ep_buffer.append({"reward": ep_reward, "ep_length": ep_length})
 
-        reward_list = [ep_info["reward"] for ep_info in ep_buffer]
+                    dist, ep_entropy = compute_categorical_entropy(
+                        option_indices, policy._a_dim
+                    )
+
+                    ep_buffer.append(
+                        {
+                            "ep_reward": ep_reward,
+                            "ep_length": ep_length,
+                            "ep_entropy": ep_entropy,
+                        }
+                    )
+
+        reward_list = [ep_info["ep_reward"] for ep_info in ep_buffer]
         length_list = [ep_info["ep_length"] for ep_info in ep_buffer]
+        entropy_list = [ep_info["ep_entropy"] for ep_info in ep_buffer]
 
         rew_mean, rew_std = np.mean(reward_list), np.std(reward_list)
         ln_mean, ln_std = np.mean(length_list), np.std(length_list)
+        ent_mean, ent_std = np.mean(entropy_list), np.std(entropy_list)
         winRate_mean, winRate_std = np.mean(red_flag_captured), np.std(
             red_flag_captured
         )
 
+        eval_dict = {
+            "rew_mean": rew_mean,
+            "rew_std": rew_std,
+            "ln_mean": ln_mean,
+            "ln_std": ln_std,
+            "ent_mean": ent_mean,
+            "ent_std": ent_std,
+            "winRate_mean": winRate_mean,
+            "winRate_std": winRate_std,
+        }
+
         if queue is not None:
-            queue.put([rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std])
+            queue.put([eval_dict])
         else:
-            return rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std
+            return eval_dict
 
     def update_render_criteria(self, epoch, num_episodes):
         basisCriteria = epoch % self.log_interval == 0 and num_episodes == 0

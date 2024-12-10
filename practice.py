@@ -1,25 +1,35 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.ndimage import uniform_filter
+from scipy.stats import entropy
 
-# Example 10x10 tensor with random noise
-np.random.seed(42)
-input_tensor = np.random.rand(12, 12)
 
-# Smoothing the tensor using a uniform filter
-smoothed_tensor = uniform_filter(input_tensor, size=5)
+def compute_categorical_entropy(indices, num_categories=8):
+    """
+    Computes the categorical distribution and its entropy for a given list of indices.
 
-# Plot original and smoothed tensors as heatmaps
-fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    Args:
+        indices (list or np.ndarray): List of category indices (0 to num_categories-1).
+        num_categories (int): Total number of categories (default is 8).
 
-ax[0].imshow(input_tensor, cmap="viridis")
-ax[0].set_title("Original Tensor")
-ax[0].axis("off")
+    Returns:
+        tuple: A tuple (distribution, entropy_value), where
+            - distribution (np.ndarray): The normalized distribution over categories.
+            - entropy_value (float): The entropy of the distribution.
+    """
+    # Count occurrences of each category
+    counts = np.bincount(indices, minlength=num_categories)
 
-ax[1].imshow(smoothed_tensor, cmap="viridis")
-ax[1].set_title("Smoothed Tensor")
-ax[1].axis("off")
+    # Normalize to get the categorical distribution
+    distribution = counts / counts.sum()
 
-plt.tight_layout()
-plt.savefig("ss.png")
-plt.show()
+    # Compute the entropy
+    entropy_value = entropy(distribution, base=2)  # Use base-2 for bits
+
+    return distribution, entropy_value
+
+
+# Example usage
+indices = [0, 1, 1, 2, 3, 1, 7, 7, 7, 0, 2]  # Example indices
+distribution, entropy_value = compute_categorical_entropy(indices)
+
+print("Categorical Distribution:", distribution)
+print("Entropy:", entropy_value)

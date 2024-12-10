@@ -154,10 +154,19 @@ class OP_Evaluator(Evaluator):
             red_flag_captured
         )
 
+        eval_dict = {
+            "rew_mean": rew_mean,
+            "rew_std": rew_std,
+            "ln_mean": ln_mean,
+            "ln_std": ln_std,
+            "winRate_mean": winRate_mean,
+            "winRate_std": winRate_std,
+        }
+
         if queue is not None:
-            queue.put([rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std])
+            queue.put([eval_dict])
         else:
-            return rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std
+            return eval_dict
 
     def update_render_criteria(self, epoch, num_episodes):
         basisCriteria = epoch % self.log_interval == 0 and num_episodes == 0
@@ -311,10 +320,19 @@ class OP_Evaluator2(Evaluator):
             red_flag_captured
         )
 
+        eval_dict = {
+            "rew_mean": rew_mean,
+            "rew_std": rew_std,
+            "ln_mean": ln_mean,
+            "ln_std": ln_std,
+            "winRate_mean": winRate_mean,
+            "winRate_std": winRate_std,
+        }
+
         if queue is not None:
-            queue.put([rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std])
+            queue.put([eval_dict])
         else:
-            return rew_mean, rew_std, ln_mean, ln_std, winRate_mean, winRate_std
+            return eval_dict
 
     def update_render_criteria(self, epoch, num_episodes):
         basisCriteria = epoch % self.log_interval == 0 and num_episodes == 0

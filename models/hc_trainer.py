@@ -81,7 +81,6 @@ class HCTrainer:
 
                 # Logging further info
                 self.num_env_steps += len(batch["rewards"])
-                loss[self._prefix + "/num_env_steps"] = self.num_env_steps
                 loss[self._prefix + "/sample_time"] = sample_time
                 loss[self._prefix + "/update_time"] = update_time
 
@@ -92,7 +91,7 @@ class HCTrainer:
 
             ### Eval Loop
             self.policy.eval()
-            avg_rew_mean, avg_rew_std, _, _ = self.evaluator(
+            eval_dict = self.evaluator(
                 self.policy,
                 env_step=self.num_env_steps,
                 epoch=e + 1,
@@ -101,8 +100,8 @@ class HCTrainer:
                 grid_type=self.grid_type,
             )
 
-            self.last_reward_mean.append(avg_rew_mean)
-            self.last_reward_std.append(avg_rew_std)
+            self.last_reward_mean.append(eval_dict["rew_mean"])
+            self.last_reward_std.append(eval_dict["rew_std"])
 
             self.save_model(e + 1)
 

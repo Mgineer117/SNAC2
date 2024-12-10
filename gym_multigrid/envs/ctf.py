@@ -9,7 +9,12 @@ from gym_multigrid.core.grid import Grid
 from gym_multigrid.core.object import Floor, Flag, Obstacle, WorldObjT
 from gym_multigrid.core.world import CtfWorld
 from gym_multigrid.multigrid import MultiGridEnv
-from gym_multigrid.policy.ctf.heuristic import RwPolicy, CtfPolicyT, HEURISTIC_POLICIES
+from gym_multigrid.policy.ctf.heuristic import (
+    RwPolicy,
+    RoombaPolicy,
+    CtfPolicyT,
+    HEURISTIC_POLICIES,
+)
 from gym_multigrid.policy.ctf.typing import ObservationDict
 from gym_multigrid.typing import Position
 from gym_multigrid.utils.map import distance_area_point, distance_points, load_text_map
@@ -48,7 +53,7 @@ class CtfMvNEnv(MultiGridEnv):
         num_red_agents: int = 2,
         enemy_policies: (
             list[Type[CtfPolicyT]] | Type[CtfPolicyT] | list[str] | str
-        ) = RwPolicy,
+        ) = RoombaPolicy,
         enemy_policy_kwargs: list[dict[str, Any]] | dict[str, Any] = {},
         battle_range: float = 1,
         territory_adv_rate: float = 0.75,

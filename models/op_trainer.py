@@ -342,9 +342,14 @@ class OPTrainer2:
                 grid_type=self.grid_type,
             )
 
+            summary_dict = {}
+            for k, v in eval_dict.items():
+                summary_dict[self.prefix + "/" + k] = v
+
             # manual logging
             self.evaluator.write_log(
-                eval_dict, iter_idx=int(e * self._step_per_epoch + self._step_per_epoch)
+                summary_dict,
+                iter_idx=int(e * self._step_per_epoch + self._step_per_epoch),
             )
 
             self.last_reward_mean.append(eval_dict["rew_mean"])

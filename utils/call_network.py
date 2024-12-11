@@ -62,15 +62,6 @@ def get_conv_layer(args):
                 "in_filters": 128,
                 "out_filters": 128,
             },  # Halve spatial dimensions again
-            {
-                "type": "conv",
-                "kernel_size": 2,
-                "stride": 2,
-                "padding": 0,
-                "activation": nn.ELU(),
-                "in_filters": 128,
-                "out_filters": 128,
-            },  # Halve spatial dimensions again
         ]
 
         decoder_conv_layers = [
@@ -99,15 +90,6 @@ def get_conv_layer(args):
                 "padding": 0,
                 "activation": nn.ELU(),
                 "in_filters": 64,
-                "out_filters": 128,
-            },  # Halve spatial dimensions again
-            {
-                "type": "conv",
-                "kernel_size": 2,
-                "stride": 2,
-                "padding": 0,
-                "activation": nn.ELU(),
-                "in_filters": 128,
                 "out_filters": 128,
             },  # Halve spatial dimensions again
             {

@@ -24,65 +24,163 @@ from log.logger_util import colorize
 def get_conv_layer(args):
     _, _, in_channels = args.s_dim
 
-    encoder_conv_layers = [
-        {
-            "type": "conv",
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 1,
-            "activation": nn.ELU(),
-            "in_filters": in_channels,
-            "out_filters": 32,
-        },  # Halve the spatial dimensions
-        {
-            "type": "conv",
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 0,
-            "activation": nn.ELU(),
-            "in_filters": 32,
-            "out_filters": 64,
-        },  # Halve spatial dimensions again
-        {
-            "type": "conv",
-            "kernel_size": 2,
-            "stride": 2,
-            "padding": 0,
-            "activation": nn.ELU(),
-            "in_filters": 64,
-            "out_filters": 128,
-        },  # Halve spatial dimensions again
-    ]
+    if args.env_name == "Maze":
+        encoder_conv_layers = [
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 1,
+                "activation": nn.ELU(),
+                "in_filters": in_channels,
+                "out_filters": 32,
+            },  # Halve the spatial dimensions
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 32,
+                "out_filters": 64,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 64,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 128,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 128,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+        ]
 
-    decoder_conv_layers = [
-        {
-            "type": "conv",
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 1,
-            "activation": nn.ELU(),
-            "in_filters": in_channels,
-            "out_filters": 32,
-        },  # Halve the spatial dimensions
-        {
-            "type": "conv",
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 0,
-            "activation": nn.ELU(),
-            "in_filters": 32,
-            "out_filters": 64,
-        },  # Halve spatial dimensions again
-        {
-            "type": "conv",
-            "kernel_size": 2,
-            "stride": 2,
-            "padding": 0,
-            "activation": nn.ELU(),
-            "in_filters": 64,
-            "out_filters": 128,
-        },  # Halve spatial dimensions again
-    ]
+        decoder_conv_layers = [
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 1,
+                "activation": nn.ELU(),
+                "in_filters": in_channels,
+                "out_filters": 32,
+            },  # Halve the spatial dimensions
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 32,
+                "out_filters": 64,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 64,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 128,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 128,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+        ]
+
+    else:
+        encoder_conv_layers = [
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 1,
+                "activation": nn.ELU(),
+                "in_filters": in_channels,
+                "out_filters": 32,
+            },  # Halve the spatial dimensions
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 32,
+                "out_filters": 64,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 64,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+        ]
+
+        decoder_conv_layers = [
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 1,
+                "activation": nn.ELU(),
+                "in_filters": in_channels,
+                "out_filters": 32,
+            },  # Halve the spatial dimensions
+            {
+                "type": "conv",
+                "kernel_size": 3,
+                "stride": 1,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 32,
+                "out_filters": 64,
+            },  # Halve spatial dimensions again
+            {
+                "type": "conv",
+                "kernel_size": 2,
+                "stride": 2,
+                "padding": 0,
+                "activation": nn.ELU(),
+                "in_filters": 64,
+                "out_filters": 128,
+            },  # Halve spatial dimensions again
+        ]
 
     return encoder_conv_layers, decoder_conv_layers
 

@@ -1,13 +1,14 @@
 import numpy as np
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.distributions import MultivariateNormal, Categorical
+from torch.distributions import MultivariateNormal, Categorical, Bernoulli
 from models.layers.building_blocks import MLP, Conv, DeConv
 
 
-class PPO_Policy(nn.Module):
+class OC_Policy(nn.Module):
     """
     Psi Advantage Function: Psi(s,a) - (1/|A|)SUM_a' Psi(s, a')
     """
@@ -17,39 +18,89 @@ class PPO_Policy(nn.Module):
         input_dim: int,
         fc_dim: int,
         a_dim: int,
+        num_options: int,
+        temperature: float = 1.0,
+        eps_start: float = 1.0,
+        eps_min: float = 0.1,
+        eps_decay: int = int(1e6),
+        eps_test: float = 0.05,
         activation: nn.Module = nn.Tanh(),
         is_discrete: bool = False,
     ):
-        super(PPO_Policy, self).__init__()
+        super(OC_Policy, self).__init__()
 
         # |A| duplicate networks
         self.act = activation
 
         self._a_dim = a_dim
+        self._num_options = num_options
+
+        self._temperature = temperature
+        self._eps_min = eps_min
+        self._eps_start = eps_start
+        self._eps_decay = eps_decay
+        self._eps_test = eps_test
+        self._num_steps = 0
+
         self._dtype = torch.float32
 
         self.logstd_range = (-10, 2)
 
         self.is_discrete = is_discrete
 
+        self.Q = nn.Linear(fc_dim, self._num_options)  # Policy-Over-Options
+        self.terminations = nn.Linear(fc_dim, num_options)  # Option-Termination
+
         if self.is_discrete:
-            self.model = MLP(
-                input_dim, (fc_dim, fc_dim, fc_dim), a_dim, activation=self.act
+            self.option_W = nn.Parameter(
+                torch.zeros(self._num_options, input_dim, self._a_dim)
             )
+            self.option_b = nn.Parameter(torch.zeros(self._num_options, self._a_dim))
         else:
-            self.model = MLP(input_dim, (fc_dim, fc_dim, fc_dim), activation=self.act)
+            self.option_W = nn.Parameter(
+                torch.zeros(self._num_options, input_dim, fc_dim)
+            )
+            self.option_b = nn.Parameter(torch.zeros(self._num_options, fc_dim))
+
             self.mu = MLP(fc_dim, (a_dim,), activation=nn.Identity())
             self.logstd = MLP(fc_dim, (a_dim,), activation=nn.Identity())
 
-    def forward(self, state: torch.Tensor, deterministic: bool = False):
+    def get_Q(self, state: torch.Tensor):
+        return self.Q(state)
+
+    def get_terminations(self, state: torch.Tensor):
+        return F.sigmoid(self.terminations(state))
+
+    def predict_option_termination(self, state: torch.Tensor, z: int):
+        termination = F.sigmoid(self.terminations(state)[:, z])
+        option_termination = Bernoulli(termination).sample()
+        Q = self.get_Q(state)
+        next_option = torch.argmax(Q, dim=-1)
+        return bool(option_termination.item()), next_option.item()
+
+    def greedy_option(self, state: torch.Tensor):
+        Q = self.get_Q(state)
+        return torch.argmax(Q, dim=-1).item()
+
+    def epsilon(self, is_eval: bool = True):
+        if is_eval:
+            eps = self._eps_test
+        else:
+            eps = self._eps_min + (self._eps_start - self._eps_min) * math.exp(
+                -self._num_steps / self._eps_decay
+            )
+            self._num_steps += 1
+        return eps
+
+    def forward(self, state: torch.Tensor, z: int, deterministic: bool = False):
         if len(state.shape) == 3 or len(state.shape) == 1:
             state = state.unsqueeze(0)
         state = state.reshape(state.shape[0], -1)
 
-        logits = self.model(state)
+        logits = state.data @ self.option_W[z] + self.option_b[z]
 
         if self.is_discrete:
-            probs = F.softmax(logits, dim=-1)
+            probs = F.softmax(logits / self._temperature, dim=-1)
             dist = Categorical(probs)
 
             if deterministic:
@@ -60,7 +111,6 @@ class PPO_Policy(nn.Module):
 
             logprobs = dist.log_prob(a_argmax)
             probs = torch.sum(probs * a, dim=-1)
-
         else:
             ### Shape the output as desired
             mu = F.tanh(self.mu(logits))
@@ -101,13 +151,13 @@ class PPO_Policy(nn.Module):
         return dist.entropy().unsqueeze(-1)
 
 
-class PPO_Critic(nn.Module):
+class OC_Critic(nn.Module):
     """
     Psi Advantage Function: Psi(s,a) - (1/|A|)SUM_a' Psi(s, a')
     """
 
     def __init__(self, input_dim: int, fc_dim: int, activation: nn.Module = nn.Tanh()):
-        super(PPO_Critic, self).__init__()
+        super(OC_Critic, self).__init__()
 
         # |A| duplicate networks
         self.act = activation

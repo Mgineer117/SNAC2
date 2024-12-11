@@ -1,19 +1,17 @@
 import torch
 import torch.nn as nn
-import random
-import uuid
+from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 import gymnasium as gym
 from gym_multigrid.envs.fourrooms import FourRooms
 
-from models.evaulators import SF_Evaluator, PPO_Evaluator
-from models import SFTrainer, PPOTrainer
+from models.evaulators import PPO_Evaluator
+from models import OCTrainer
 from utils import *
-from utils.call_env import call_env
 
 
-class PPO:
+class OptionCritic:
     def __init__(self, env: gym.Env, logger, writer, args):
         """
         This is a naive PPO wrapper that includes all necessary training pipelines for HRL.
@@ -64,7 +62,7 @@ class PPO:
 
         ### Define evaulators tailored for each process
         # each evaluator has slight deviations
-        self.ppo_evaluator = PPO_Evaluator(
+        self.oc_evaluator = PPO_Evaluator(
             logger=logger,
             writer=writer,
             training_env=self.env,
@@ -81,26 +79,27 @@ class PPO:
         torch.cuda.empty_cache()
 
     def train_ppo(self):
-        self.sampler.initialize(episode_num=self.args.ppo_episode_num)
+        self.sampler.initialize(episode_num=self.args.oc_episode_num)
 
         ### Call network param and run
-        self.ppo_network = call_ppoNetwork(self.args)
-        print_model_summary(self.ppo_network, model_name="PPO model")
-        if not self.args.import_ppo_model:
-            ppo_trainer = PPOTrainer(
-                policy=self.ppo_network,
+        self.oc_network = call_ocNetwork(self.args)
+        self.target_oc_network = deepcopy(self.oc_network)
+        print_model_summary(self.oc_network, model_name="Option-Critic model")
+        if not self.args.import_oc_model:
+            oc_trainer = OCTrainer(
+                policy=self.oc_network,
                 sampler=self.sampler,
                 logger=self.logger,
                 writer=self.writer,
-                evaluator=self.ppo_evaluator,
-                epoch=self.curr_epoch + self.args.PPO_epoch,
+                evaluator=self.oc_evaluator,
+                epoch=self.curr_epoch + self.args.oc_epoch,
                 init_epoch=self.curr_epoch,
                 step_per_epoch=self.args.step_per_epoch,
                 eval_episodes=self.args.eval_episodes,
-                log_interval=self.args.ppo_log_interval,
+                log_interval=self.args.oc_log_interval,
                 grid_type=self.args.grid_type,
             )
-            final_epoch = ppo_trainer.train()
+            final_epoch = oc_trainer.train()
         else:
             final_epoch = self.curr_epoch + self.args.PPO_epoch
 

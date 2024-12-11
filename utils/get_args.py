@@ -87,6 +87,12 @@ def get_args(verbose=True):
         help="logging interval; epoch-based",
     )
     parser.add_argument(
+        "--oc-log-interval",
+        type=int,
+        default=None,
+        help="logging interval; epoch-based",
+    )
+    parser.add_argument(
         "--ppo-log-interval",
         type=int,
         default=None,
@@ -129,6 +135,12 @@ def get_args(verbose=True):
         type=int,
         default=None,  # 500
         help="total number of epochs; every epoch it does evaluation",
+    )
+    parser.add_argument(
+        "--OC-epoch",
+        type=int,
+        default=None,  # 500
+        help="For PPO alg. Total number of epochs; every epoch it does evaluation",
     )
     parser.add_argument(
         "--PPO-epoch",
@@ -187,6 +199,12 @@ def get_args(verbose=True):
     )
     parser.add_argument(
         "--ppo-episode-num",
+        type=int,
+        default=None,
+        help="number of episodes to collect for one env",
+    )
+    parser.add_argument(
+        "--oc-episode-num",
         type=int,
         default=None,
         help="number of episodes to collect for one env",
@@ -422,6 +440,12 @@ def get_args(verbose=True):
     )
     parser.add_argument(
         "--import-ppo-model",
+        type=bool,
+        default=False,
+        help="it imports previously trained model",
+    )
+    parser.add_argument(
+        "--import-oc-model",
         type=bool,
         default=False,
         help="it imports previously trained model",

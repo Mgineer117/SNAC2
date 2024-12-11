@@ -20,10 +20,10 @@ class Plotter:
         grid_size=19,
         img_tile_size=32,
         sf_path: str | None = None,
-        ppo_path: str | None = None,
         op_path: str | None = None,
-        ug_path: str | None = None,
         hc_path: str | None = None,
+        oc_path: str | None = None,
+        ppo_path: str | None = None,
         log_dir: str | None = None,
         device=torch.device("cpu"),
     ):
@@ -36,7 +36,7 @@ class Plotter:
         self.sf_path = sf_path
         self.ppo_path = ppo_path
         self.op_path = op_path
-        self.ug_path = ug_path
+        self.oc_path = oc_path
         self.hc_path = hc_path
         self.log_dir = log_dir
 

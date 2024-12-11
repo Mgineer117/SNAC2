@@ -34,10 +34,10 @@ class BaseLogger(ABC):
 
         folder_names = [
             "SF",
-            "PPO",
             "OP",
-            "UG",
             "HC",
+            "OC",
+            "PPO",
         ]  # successor feature, option policy, hierarchical controller
 
         self.log_dirs = []

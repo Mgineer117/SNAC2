@@ -60,7 +60,7 @@
     "CtF1v1": {
         "SF_epoch": 1500,
         "Psi_epoch": 0,
-        "OP_epoch": 25,
+        "OP_epoch": 20,
         "HC_epoch": 100,
         "PPO_epoch": 100,
         "step_per_epoch": 10,
@@ -89,7 +89,7 @@
     "CtF1v2": {
         "SF_epoch": 1500,
         "Psi_epoch": 0,
-        "OP_epoch": 25,
+        "OP_epoch": 20,
         "HC_epoch": 100,
         "PPO_epoch": 100,
         "step_per_epoch": 10,

@@ -166,14 +166,23 @@ class Maze(MultiGridEnv):
                 fwd_pos = tuple(a + b for a, b in zip(curr_pos, (0, -1)))
                 fwd_cell = self.grid.get(*fwd_pos)
 
+                dist_reward = np.linalg.norm(
+                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                )
+                dist_norm_reward = dist_reward / np.linalg.norm(
+                    [self.width, self.height], ord=2
+                )
+
+                rewards += 0.5 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
+
                 if fwd_cell is not None:
                     if fwd_cell.type == "goal":
                         done = True
-                        rewards = self._reward(i, rewards, 1)
+                        rewards += self._reward(i, rewards, 1)
                     elif fwd_cell.type == "switch":
                         self._handle_switch(i, rewards, fwd_pos, fwd_cell)
                     elif fwd_cell.type == "ball":
-                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                        rewards += self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
                 elif fwd_cell is None or fwd_cell.can_overlap():
                     self.grid.set(*self.agents[i].pos, None)
                     self.grid.set(*fwd_pos, self.agents[i])
@@ -185,14 +194,24 @@ class Maze(MultiGridEnv):
                 # Get the contents of the cell in front of the agent
                 fwd_pos = tuple(a + b for a, b in zip(curr_pos, (0, +1)))
                 fwd_cell = self.grid.get(*fwd_pos)
+
+                dist_reward = np.linalg.norm(
+                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                )
+                dist_norm_reward = dist_reward / np.linalg.norm(
+                    [self.width, self.height], ord=2
+                )
+
+                rewards += 0.5 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
+
                 if fwd_cell is not None:
                     if fwd_cell.type == "goal":
                         done = True
-                        rewards = self._reward(i, rewards, 1)
+                        rewards += self._reward(i, rewards, 1)
                     elif fwd_cell.type == "switch":
                         self._handle_switch(i, rewards, fwd_pos, fwd_cell)
                     elif fwd_cell.type == "ball":
-                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                        rewards += self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
                 elif fwd_cell is None or fwd_cell.can_overlap():
                     self.grid.set(*self.agents[i].pos, None)
                     self.grid.set(*fwd_pos, self.agents[i])
@@ -204,14 +223,24 @@ class Maze(MultiGridEnv):
                 # Get the contents of the cell in front of the agent
                 fwd_pos = tuple(a + b for a, b in zip(curr_pos, (-1, 0)))
                 fwd_cell = self.grid.get(*fwd_pos)
+
+                dist_reward = np.linalg.norm(
+                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                )
+                dist_norm_reward = dist_reward / np.linalg.norm(
+                    [self.width, self.height], ord=2
+                )
+
+                rewards += 0.5 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
+
                 if fwd_cell is not None:
                     if fwd_cell.type == "goal":
                         done = True
-                        rewards = self._reward(i, rewards, 1)
+                        rewards += self._reward(i, rewards, 1)
                     elif fwd_cell.type == "switch":
                         self._handle_switch(i, rewards, fwd_pos, fwd_cell)
                     elif fwd_cell.type == "ball":
-                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                        rewards += self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
                 elif fwd_cell is None or fwd_cell.can_overlap():
                     self.grid.set(*self.agents[i].pos, None)
                     self.grid.set(*fwd_pos, self.agents[i])
@@ -222,14 +251,24 @@ class Maze(MultiGridEnv):
                 # Get the contents of the cell in front of the agent
                 fwd_pos = tuple(a + b for a, b in zip(curr_pos, (+1, 0)))
                 fwd_cell = self.grid.get(*fwd_pos)
+
+                dist_reward = np.linalg.norm(
+                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                )
+                dist_norm_reward = dist_reward / np.linalg.norm(
+                    [self.width, self.height], ord=2
+                )
+
+                rewards += 0.5 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
+
                 if fwd_cell is not None:
                     if fwd_cell.type == "goal":
                         done = True
-                        rewards = self._reward(i, rewards, 1)
+                        rewards += self._reward(i, rewards, 1)
                     elif fwd_cell.type == "switch":
                         self._handle_switch(i, rewards, fwd_pos, fwd_cell)
                     elif fwd_cell.type == "ball":
-                        rewards = self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
+                        rewards += self._handle_pickup(i, rewards, fwd_pos, fwd_cell)
                 elif fwd_cell is None or fwd_cell.can_overlap():
                     self.grid.set(*self.agents[i].pos, None)
                     self.grid.set(*fwd_pos, self.agents[i])

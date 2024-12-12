@@ -33,6 +33,7 @@ class TrajectoryBuffer:
             rewards,
             terminals,
             logprobs,
+            entropys,
         ) = (
             batch["states"],
             batch["actions"],
@@ -42,6 +43,7 @@ class TrajectoryBuffer:
             batch["rewards"],
             batch["terminals"],
             batch["logprobs"],
+            batch["entropys"],
         )
 
         trajs = []
@@ -57,6 +59,7 @@ class TrajectoryBuffer:
                     "rewards": rewards[prev_i : i + 1],
                     "terminals": terminals[prev_i : i + 1],
                     "logprobs": logprobs[prev_i : i + 1],
+                    "entropys": entropys[prev_i : i + 1],
                 }
                 trajs.append(data)
                 prev_i = i + 1
@@ -83,7 +86,7 @@ class TrajectoryBuffer:
         if not self.full:
             trajs = self.decompose(batch)
 
-            if post_process == "non_zero_rewards":
+            if post_process == "nonzero_rewards":
                 temp_trajs = []
                 for trj in trajs:
                     if np.any(trj["rewards"] != 0):
@@ -133,6 +136,9 @@ class TrajectoryBuffer:
             "logprobs": np.concatenate(
                 [traj["logprobs"] for traj in sampled_data], axis=0
             ),
+            "entropys": np.concatenate(
+                [traj["entropys"] for traj in sampled_data], axis=0
+            ),
         }
 
         return sampled_batch
@@ -166,6 +172,9 @@ class TrajectoryBuffer:
             ),
             "logprobs": np.concatenate(
                 [traj["logprobs"] for traj in sampled_data], axis=0
+            ),
+            "entropys": np.concatenate(
+                [traj["entropys"] for traj in sampled_data], axis=0
             ),
         }
 

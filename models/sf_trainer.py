@@ -109,6 +109,7 @@ class SFTrainer:
                 grid_type=self.grid_type,
             )
             self.save_model(e + 1)
+            torch.cuda.empty_cache()
 
         self.buffer.wipe()
 
@@ -133,6 +134,8 @@ class SFTrainer:
                 loss["SF/train_rew_mean"] = np.mean(batch["rewards"])
 
                 self.write_log(loss, iter_idx=int(e * self._step_per_epoch + it))
+
+            torch.cuda.empty_cache()
 
         self.policy.eval()
         self.logger.print(

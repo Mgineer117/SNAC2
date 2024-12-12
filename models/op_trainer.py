@@ -155,6 +155,7 @@ class OPTrainer:
             self.last_reward_std.append(rew_std)
 
             self.save_model(e + 1)
+            torch.cuda.empty_cache()
 
         self.policy.eval()
         self.logger.print(
@@ -207,6 +208,8 @@ class OPTrainer:
             self.evaluator.write_log(
                 eval_dict, iter_idx=int(e * self._step_per_epoch + self._step_per_epoch)
             )
+
+            torch.cuda.empty_cache()
 
         return epoch
 
@@ -356,6 +359,7 @@ class OPTrainer2:
             self.last_reward_std.append(eval_dict["rew_std"])
 
             self.save_model(e)
+            torch.cuda.empty_cache()
 
         self.logger.print(
             "total OP2 training time: {:.2f} hours".format(
@@ -399,6 +403,7 @@ class OPTrainer2:
             ln_std[j] = eval_dict["ln_std"]
 
             j += 1
+            torch.cuda.empty_cache()
 
         rew_mean = np.mean(rew_mean)
         rew_std = np.mean(rew_std)

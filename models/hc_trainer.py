@@ -104,6 +104,7 @@ class HCTrainer:
             self.last_reward_std.append(eval_dict["rew_std"])
 
             self.save_model(e + 1)
+            torch.cuda.empty_cache()
 
         self.logger.print(
             f"total {self._prefix} training time: {((time.time() - start_time) / 3600):.2f} hours"

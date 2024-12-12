@@ -104,6 +104,7 @@ class PPOTrainer:
             self.last_reward_std.append(eval_dict["rew_std"])
 
             self.save_model(e + 1)
+            torch.cuda.empty_cache()
 
         self.logger.print(
             "total PPO training time: {:.2f} hours".format(

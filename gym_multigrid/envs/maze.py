@@ -167,8 +167,10 @@ class Maze(MultiGridEnv):
                 fwd_cell = self.grid.get(*fwd_pos)
 
                 dist_reward = np.linalg.norm(
-                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                    np.array(self.goal_positions[self.grid_type]) - np.array(fwd_pos),
+                    ord=2,
                 )
+
                 dist_norm_reward = dist_reward / np.linalg.norm(
                     [self.width, self.height], ord=2
                 )
@@ -196,8 +198,10 @@ class Maze(MultiGridEnv):
                 fwd_cell = self.grid.get(*fwd_pos)
 
                 dist_reward = np.linalg.norm(
-                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                    np.array(self.goal_positions[self.grid_type]) - np.array(fwd_pos),
+                    ord=2,
                 )
+
                 dist_norm_reward = dist_reward / np.linalg.norm(
                     [self.width, self.height], ord=2
                 )
@@ -225,8 +229,10 @@ class Maze(MultiGridEnv):
                 fwd_cell = self.grid.get(*fwd_pos)
 
                 dist_reward = np.linalg.norm(
-                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                    np.array(self.goal_positions[self.grid_type]) - np.array(fwd_pos),
+                    ord=2,
                 )
+
                 dist_norm_reward = dist_reward / np.linalg.norm(
                     [self.width, self.height], ord=2
                 )
@@ -253,8 +259,10 @@ class Maze(MultiGridEnv):
                 fwd_cell = self.grid.get(*fwd_pos)
 
                 dist_reward = np.linalg.norm(
-                    self.goal_positions[self.grid_type] - fwd_pos, ord=2
+                    np.array(self.goal_positions[self.grid_type]) - np.array(fwd_pos),
+                    ord=2,
                 )
+
                 dist_norm_reward = dist_reward / np.linalg.norm(
                     [self.width, self.height], ord=2
                 )

@@ -267,7 +267,7 @@ class Maze(MultiGridEnv):
                     [self.width, self.height], ord=2
                 )
 
-                rewards += 0.5 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
+                rewards += 0.1 * dist_norm_reward  # 0 ~ 0.5 of weak reward signals
 
                 if fwd_cell is not None:
                     if fwd_cell.type == "goal":

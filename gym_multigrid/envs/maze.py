@@ -26,8 +26,8 @@ class Maze(MultiGridEnv):
     def __init__(
         self,
         grid_type: int = 0,
-        width=23,
-        height=23,
+        width=20,
+        height=20,
         max_steps=1000,
         see_through_walls=False,
         agent_view_size=7,
@@ -58,8 +58,8 @@ class Maze(MultiGridEnv):
         ]
 
         # Define positions for goals and agents
-        self.goal_positions = [(8, 20)]
-        self.agent_positions = [(13, 9)]
+        self.goal_positions = [(17, 17)]
+        self.agent_positions = [(12, 7)]
 
         self.grids = {}
         self.grid_imgs = {}
@@ -85,29 +85,26 @@ class Maze(MultiGridEnv):
 
         # Explicit maze structure based on the image
         maze_structure = [
-            "#######################",
-            "#               #     #",
-            "#               #     #",
-            "#                     #",
-            "#######   ###  ####  ##",
-            "#     #   #      #    #",
-            "#     #          #    #",
-            "#     #          #    #",
-            "#     #   #      #    #",
-            "#  #  #   #      #    #",
-            "#  #  #   #      #    #",
-            "#  #  #   ##########  #",
-            "#  #  #      #     #  #",
-            "#  #  #      #     #  #",
-            "#  #  #      #     #  #",
-            "#  #  #      #  #  #  #",
-            "#  #  #      #  #  #  #",
-            "#  #         #  #  #  #",
-            "#  #         #  #     #",
-            "#  ###########  #     #",
-            "#               #     #",
-            "#               #     #",
-            "#######################",
+            "####################",
+            "#                  #",
+            "#            #     #",
+            "#       ###  ####  #",
+            "#              #   #",
+            "#####          #   #",
+            "#   #   #      #   #",
+            "#   #   #      #   #",
+            "#   #   #      #   #",
+            "#   #   ########   #",
+            "#   #      #   #   #",
+            "#   #      #       #",
+            "#          #       #",
+            "#   #      #   #   #",
+            "#   #      #   #####",
+            "#   #      #       #",
+            "#  #########       #",
+            "#                  #",
+            "#                  #",
+            "####################",
         ]
 
         # Translate the maze structure into the grid

@@ -80,7 +80,14 @@ class PPO_Policy(nn.Module):
             logprobs = dist.log_prob(a)
             probs = torch.exp(logprobs)
 
-        return a, {"dist": dist, "probs": probs, "logprobs": logprobs}
+        entropy = dist.entropy()
+
+        return a, {
+            "dist": dist,
+            "probs": probs,
+            "logprobs": logprobs,
+            "entropy": entropy,
+        }
 
     def log_prob(self, dist: torch.distributions, actions: torch.Tensor):
         """

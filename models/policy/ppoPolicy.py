@@ -97,6 +97,7 @@ class PPO_Learner(BasePolicy):
             # "z": self.dummy.item(),
             "probs": metaData["probs"],
             "logprobs": metaData["logprobs"],
+            "entropy": metaData["entropy"],
         }
 
     def learn(self, batch, z=0):

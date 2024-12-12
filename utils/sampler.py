@@ -95,6 +95,7 @@ class Base:
                 rewards=np.zeros((batch_size, 1), dtype=np.float32),
                 terminals=np.zeros((batch_size, 1), dtype=np.int8),
                 logprobs=np.zeros((batch_size, 1), dtype=np.float32),
+                entropys=np.zeros((batch_size, 1), dtype=np.float32),
             )
         elif init == "nan":
             data = dict(
@@ -119,6 +120,7 @@ class Base:
                 rewards=np.full((batch_size, 1), np.nan, dtype=np.float32),
                 terminals=np.full((batch_size, 1), np.nan, dtype=np.int8),
                 logprobs=np.full((batch_size, 1), np.nan, dtype=np.float32),
+                entropys=np.full((batch_size, 1), np.nan, dtype=np.float32),
             )
         else:
             NotImplementedError("Not implemented")
@@ -405,6 +407,9 @@ class OnlineSampler(Base):
                 data["logprobs"][current_step + t] = (
                     metaData["logprobs"].detach().numpy()
                 )
+                data["entropys"][current_step + t] = (
+                    metaData["entropy"].detach().numpy()
+                )
 
                 if done:
                     # clear log
@@ -471,20 +476,36 @@ class OnlineSampler(Base):
                 if metaData["is_option"]:
                     next_obs, rew, done, infos = env_step(a)
                     if not done:
-                        for o_t in range(self.min_option_length - 1):
-                            # env stepping
-                            with torch.no_grad():
-                                option_a, _ = policy(
-                                    next_obs,
-                                    metaData["z_argmax"],
-                                    deterministic=deterministic,
-                                )
-                                option_a = option_a.cpu().numpy().squeeze()
+                        if metaData["option_termination"] is None:
+                            for o_t in range(self.min_option_length - 1):
+                                # env stepping
+                                with torch.no_grad():
+                                    option_a, _ = policy(
+                                        next_obs,
+                                        metaData["z_argmax"],
+                                        deterministic=deterministic,
+                                    )
+                                    option_a = option_a.cpu().numpy().squeeze()
 
-                            next_obs, op_rew, done, infos = env_step(option_a)
-                            rew += self.gamma ** (o_t + 1) * op_rew
-                            if done:
-                                break
+                                next_obs, op_rew, done, infos = env_step(option_a)
+                                rew += self.gamma ** (o_t + 1) * op_rew
+                                if done:
+                                    break
+                        else:
+                            while not metaData["option_termination"]:
+                                # env stepping
+                                with torch.no_grad():
+                                    option_a, _ = policy(
+                                        next_obs,
+                                        metaData["z_argmax"],
+                                        deterministic=deterministic,
+                                    )
+                                    option_a = option_a.cpu().numpy().squeeze()
+
+                                next_obs, op_rew, done, infos = env_step(option_a)
+                                rew += self.gamma ** (o_t + 1) * op_rew
+                                if done:
+                                    break
                 else:
                     ### Conventional Loop
                     next_obs, rew, done, infos = env_step(a)
@@ -500,6 +521,9 @@ class OnlineSampler(Base):
                 data["terminals"][current_step + t] = done
                 data["logprobs"][current_step + t] = (
                     metaData["logprobs"].detach().numpy()
+                )
+                data["entropys"][current_step + t] = (
+                    metaData["entropy"].detach().numpy()
                 )
 
                 if done:
@@ -606,6 +630,9 @@ class OnlineSampler(Base):
                 data["terminals"][current_step + t] = done
                 data["logprobs"][current_step + t] = (
                     metaData["logprobs"].detach().numpy()
+                )
+                data["entropys"][current_step + t] = (
+                    metaData["entropy"].detach().numpy()
                 )
 
                 if done:

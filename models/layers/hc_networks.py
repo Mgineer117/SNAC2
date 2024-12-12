@@ -54,15 +54,12 @@ class HC_Policy(nn.Module):
 
         logprobs = dist.log_prob(z_argmax)
         probs = torch.sum(probs * z, dim=-1)
+        entropy = dist.entropy()
 
         return (
             z,
             z_argmax,
-            {
-                "dist": dist,
-                "probs": probs,
-                "logprobs": logprobs,
-            },
+            {"dist": dist, "probs": probs, "logprobs": logprobs, "entropy": entropy},
         )
 
     def log_prob(self, dist: torch.distributions, actions: torch.Tensor):

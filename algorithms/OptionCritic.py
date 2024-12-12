@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 import gymnasium as gym
@@ -83,7 +82,6 @@ class OptionCritic:
 
         ### Call network param and run
         self.oc_network = call_ocNetwork(self.args)
-        self.target_oc_network = deepcopy(self.oc_network)
         print_model_summary(self.oc_network, model_name="Option-Critic model")
         if not self.args.import_oc_model:
             oc_trainer = OCTrainer(

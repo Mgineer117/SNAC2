@@ -213,6 +213,7 @@ class SF_Split(BasePolicy):
             "z": self.dummy,  # dummy
             "probs": self.dummy,  # dummy
             "logprobs": self.dummy,  # dummy
+            "entropy": self.dummy,  # dummy
         }
 
     def random_walk(self, obs):

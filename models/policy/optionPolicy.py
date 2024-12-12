@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.optimize import fmin_l_bfgs_b as bfgs
 
-from copy import deepcopy
 from utils.torch import get_flat_grad_from, get_flat_params_from, set_flat_params_to
 from utils.utils import estimate_advantages, estimate_psi
 from models.layers.building_blocks import MLP
@@ -130,6 +129,7 @@ class OP_Controller(BasePolicy):
         return a, {
             "probs": metaData["probs"],
             "logprobs": metaData["logprobs"],
+            "entropy": metaData["entropy"],
         }
 
     def random_walk(self, obs):
